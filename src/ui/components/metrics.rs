@@ -1,4 +1,4 @@
-use crate::App;
+use crate::ui::App;
 use ratatui::layout::Constraint;
 use ratatui::prelude::{Color, Modifier, Style};
 use ratatui::widgets::{Block, Borders, Row, Table};

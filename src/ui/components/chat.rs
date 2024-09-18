@@ -1,7 +1,7 @@
 
 use ratatui::prelude::{Color, Style};
 use ratatui::widgets::{Block, Borders, Paragraph};
-use crate::{App, Focus};
+use crate::ui::{App, Focus};
 
 pub fn build_chat(app: &App) -> Paragraph {
     // Draw the Main Chat as Paragraph (Could be replaced with a Table if needed)

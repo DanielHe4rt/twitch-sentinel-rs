@@ -2,7 +2,7 @@
 use ratatui::layout::Constraint;
 use ratatui::prelude::{Color, Modifier, Style};
 use ratatui::widgets::{Block, Borders, Row, Table};
-use crate::App;
+use crate::ui::App;
 
 pub fn build_chatters_list(app: &App) -> Table {
     let users_block = Block::default()

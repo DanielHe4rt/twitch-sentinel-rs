@@ -1,5 +1,5 @@
 use crossterm::event::{KeyCode, KeyEvent};
-use crate::{App, Focus};
+use crate::ui::{App, Focus};
 
 pub fn handle(app: &mut App, key: KeyEvent) -> anyhow::Result<bool> {
     match key.code {

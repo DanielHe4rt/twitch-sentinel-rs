@@ -4,7 +4,7 @@ use charybdis::scylla::PagingState;
 use charybdis::types::Timestamp;
 use chrono::Utc;
 use scylla::Session;
-use crate::App;
+use crate::ui::App;
 
 pub async fn fetch_data(app: Arc<Mutex<App>>, session: Arc<Session>) -> anyhow::Result<()> {
     let mut prepared_connected_users = session

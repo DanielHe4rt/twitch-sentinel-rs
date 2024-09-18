@@ -1,5 +1,5 @@
 use ratatui::layout::Constraint;
-use crate::{App, Focus};
+use crate::ui::{App, Focus};
 use ratatui::prelude::{Color, Modifier, Span, Style};
 use ratatui::widgets::{Block, Borders, Row, Table, Tabs};
 
@@ -12,7 +12,7 @@ pub fn build_right_bar(app: &App) -> Tabs {
         } else {
             Style::default().fg(Color::White)
         });
-    
+
     // Tabs for the right bar
     let tabs = Tabs::new(app.tabs.iter().cloned().map(Span::from).collect::<Vec<Span>>())
         .select(app.active_tab as usize)

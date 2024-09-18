@@ -1,7 +1,7 @@
 use ratatui::layout::Constraint;
 use ratatui::prelude::{Color, Modifier, Style};
 use ratatui::widgets::{Block, Borders, Row, Table};
-use crate::{App, Focus};
+use crate::ui::{App, Focus};
 
 pub fn build_sidebar(app: &App) -> Table {
 
