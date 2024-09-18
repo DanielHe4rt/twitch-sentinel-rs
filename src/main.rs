@@ -17,18 +17,23 @@ use ratatui::{
     Terminal,
 };
 use scylla::frame::value::CqlDate;
-use scylla::SessionBuilder;
+use scylla::{Session, SessionBuilder};
 use std::ops::{Add, Deref};
 use std::{
     sync::{Arc, Mutex},
     time::Duration,
 };
+use std::io::Stdout;
+use anyhow::Context;
+use crossterm::event::KeyEvent;
 use scylla::statement::PagingState;
 use tokio::sync::mpsc;
 use tokio::time::interval;
 
 mod components;
 mod models;
+mod input;
+mod hydration;
 
 // Define the application state
 struct App {
@@ -220,27 +225,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let backend = CrosstermBackend::new(stdout);
     let mut terminal = Terminal::new(backend)?;
 
-    // Create the application state
-    let app = Arc::new(Mutex::new(App::new()));
-
-    // Create a channel to communicate between the input handler and the main thread
-    let (tx, mut rx) = mpsc::channel(100);
-
-    // Clone the Arc for the input handler
-    let app_clone = Arc::clone(&app);
-
-    // Spawn a task to handle input
-    tokio::spawn(async move {
-        loop {
-            // Poll for an event with a timeout
-            if event::poll(Duration::from_millis(20)).unwrap() {
-                if let CEvent::Key(key) = event::read().unwrap() {
-                    tx.send(key).await.unwrap();
-                }
-            }
-        }
-    });
-
     let session = SessionBuilder::new()
         .known_node("localhost:9042")
         .build()
@@ -248,12 +232,36 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .unwrap();
     session.use_keyspace("twitch", true).await.unwrap();
     let session = Arc::new(session);
+
+    // Create the application state
+    let app = Arc::new(Mutex::new(App::new()));
+
+    // Create a channel to communicate between the input handler and the main thread
+    let (tx, mut rx) = mpsc::channel(100);
+
+    // Spawn a task to handle input
+    tokio::spawn(async move {
+        loop {
+            // Poll for an event with a timeout
+            if event::poll(Duration::from_millis(20)).unwrap() {
+                if let CEvent::Key(key) = event::read().unwrap() {
+                    let event = tx.send(key).await;
+                    if event.is_err() {
+                        break;
+                    }
+                }
+            }
+        }
+    });
+
+
+
     // Create a channel for tick events.
     let (tick_tx, mut tick_rx) = mpsc::channel(100);
 
     // Spawn a task to send tick events every 250ms.
     tokio::spawn(async move {
-        let mut interval = interval(Duration::from_millis(5));
+        let mut interval = interval(Duration::from_millis(250));
         loop {
             interval.tick().await;
             if tick_tx.send(()).await.is_err() {
@@ -262,89 +270,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
     });
 
-    tokio::spawn(async move {
-        // Initialize ScyllaDB session
-        let mut prepared_connected_users = session
-            .prepare("SELECT chatter_id FROM twitch.connected_users_to_channel WHERE streamer_id = ? LIMIT 30")
-            .await
-            .unwrap();
-
-        let mut prepared_chat = session
-            .prepare("SELECT sent_at, chatter_username, content, chatter_color FROM twitch.messages WHERE streamer_id = ? LIMIT 40")
-            .await
-            .unwrap();
-
-        let mut prepared_streamers_events_leaderboard = session
-            .prepare("SELECT streamer_id, events_count FROM twitch.streamers_events_leaderboard WHERE day = ? LIMIT 50")
-            .await
-            .unwrap();
-
-        loop {
-            // Fetch connected users
-            let channel = {
-                let app = app_clone.lock().unwrap();
-                app.active_channels[app.active_channel].0.clone()
-            };
-
-            let mut paging_state = PagingState::start();
-            let result = session.execute_unpaged(&prepared_connected_users, (channel.clone(),)).await.unwrap();
-            let mut connected_users = vec![];
-            let iter = result.rows_typed::<(String,)>().unwrap().enumerate();
-            for (idx, row) in iter {
-                connected_users.push((row.unwrap().0, idx as u32));
-            }
-            {
-                let mut app = app_clone.lock().unwrap();
-                app.connected_users = connected_users;
-            }
-
-            // Fetch chat
-            let mut paging_state = PagingState::start();
-            let (result, _) = session.execute_single_page(&prepared_chat, (channel,), paging_state).await.unwrap();
-            let mut chat_messages = vec![];
-            let iter = result
-                .rows_typed::<(Timestamp, String, String, Option<String>)>()
-                .unwrap()
-                .enumerate();
-            for (idx, row) in iter {
-                let (sent_at, chatter_id, message, chatter_color) = row.unwrap();
-                let chatter_color = chatter_color.unwrap_or("white".to_string());
-                let message = format!("[{}] {}: {}", sent_at, chatter_id, message);
-                chat_messages.push(message);
-            }
-            {
-                let mut app = app_clone.lock().unwrap();
-                app.chat_messages = chat_messages;
-            }
-
-            // channels
-            let mut active_channels = vec![];
-
-
-            let epoch_naive = Utc::now().date_naive();
-
-            let mut paging_state = PagingState::start();
-            let (result, _) = session.execute_single_page(&prepared_streamers_events_leaderboard, (epoch_naive,), paging_state).await.unwrap();
-            let iter = result.rows_typed::<(String, i32)>().unwrap().enumerate();
-            for (idx, row) in iter {
-                let (streamer_id, events_count) = row.unwrap();
-                let formatted = format!("{} ({})", streamer_id, events_count);
-                active_channels.push((streamer_id, formatted, idx));
-            }
-            {
-                let mut app = app_clone.lock().unwrap();
-                if app.active_channels.len() != active_channels.len() {
-                    app.active_channel = 0;
-                }
-                app.active_channels = active_channels;
-            }
-
-            // Sleep before the next fetch
-            tokio::time::sleep(Duration::from_millis(300)).await;
-        }
-    });
     // Main loop
     // Main event loop.
+    let mut database_interval = tokio::time::interval(Duration::from_millis(350));
     loop {
         tokio::select! {
             // Handle tick events to redraw the UI.
@@ -356,52 +284,15 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             // Handle input events.
             Some(key) = rx.recv() => {
                 let mut app = app.lock().unwrap();
+                let exit = input::handle(&mut app, key)?;
 
-                match key.code {
-                    KeyCode::Char('q') => {
-                        break;
-                    }
-                    KeyCode::Tab => {
-                        app.focus_next();
-                    }
-                    KeyCode::BackTab => {
-                        app.focus_previous();
-                    }
-                    KeyCode::Up => {
-                        if app.focused == Focus::Sidebar {
-                            if app.active_channel > 0 {
-                                app.active_channel -= 1;
-                            }
-                        }
-                        // Optionally, handle up arrow for other components
-                    }
-                    KeyCode::Down => {
-                        if app.focused == Focus::Sidebar {
-                            if app.active_channel < app.active_channels.len() - 1 {
-                                app.active_channel += 1;
-                            }
-                        }
-                        // Optionally, handle down arrow for other components
-                    }
-                    KeyCode::Enter => {
-                        if app.focused == Focus::Sidebar {
-                            // Handle channel selection
-                            let selected_channel = app.active_channels[app.active_channel].clone();
-                            // Update app state to load the selected channel
-                            app.active_channel = app.active_channel;
-                            // Optionally, trigger data fetching for the new channel
-                            // You might need to implement additional logic here
-                        }
-                    }
-                    KeyCode::Left => {
-                        app.previous_tab()
-                    }
-                    KeyCode::Right => {
-                        app.next_tab()
-                    }
-                    // ... other key events ...
-                    _ => {}
+                if exit {
+                    break;
                 }
+            }
+           _ = database_interval.tick() => {
+                hydration::fetch_data(Arc::clone(&app), Arc::clone(&session)).await
+                    .context("Failed to fetch data")?;
             }
 
             else => {
@@ -410,13 +301,18 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
     }
     // Restore the terminal
-    disable_raw_mode()?;
+    disable_raw_mode().context("Failed to disable raw mode")?;
     execute!(
         terminal.backend_mut(),
         LeaveAlternateScreen,
         DisableMouseCapture
-    )?;
-    terminal.show_cursor()?;
+    )
+        .context("Failed to leave alternate screen")?;
+    terminal.show_cursor().context("Failed to show cursor")?;
 
     Ok(())
 }
+
+
+
+
