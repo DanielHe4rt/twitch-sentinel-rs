@@ -45,7 +45,7 @@ pub async fn fetch_data(app: Arc<Mutex<App>>, session: Arc<Session>) -> anyhow::
         .context("Failed to parse chat messages")?
         .map(|row| {
             let (sent_at, chatter_id, message, chatter_color) = row.unwrap();
-            let chatter_color = chatter_color.unwrap_or_else(|| "white".to_string());
+            let _ = chatter_color.unwrap_or_else(|| "white".to_string());
             format!("[{}] {}: {}", sent_at, chatter_id, message)
         })
         .collect();

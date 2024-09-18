@@ -33,7 +33,7 @@ pub fn build_ranking(app: &App) -> Table {
     let rankings: Vec<Row> = app
         .rankings
         .iter()
-        .map(|(user, msg)| Row::new(vec![user.as_str(), "msg.to_string()"]))
+        .map(|(user, _)| Row::new(vec![user.as_str(), "foda"]))
         .collect();
 
      Table::new(rankings, [Constraint::Percentage(100)])

@@ -100,9 +100,6 @@ impl App {
         };
     }
 
-    pub fn update_connected_users(&mut self, users: Vec<(String, u32)>) {
-        self.connected_users = users;
-    }
 }
 
 // Enum to represent focused component
@@ -124,7 +121,7 @@ fn draw_ui(f: &mut ratatui::Frame, app: &App) {
             ]
                 .as_ref(),
         )
-        .split(f.size());
+        .split(f.area());
 
     // Define the main content layout (horizontal split for sidebar, chat, and right bar)
     let main_chunks = Layout::default()
