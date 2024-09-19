@@ -14,13 +14,16 @@ use ratatui::{
     widgets::{Block, Borders},
     Terminal,
 };
-use scylla::SessionBuilder;
+use scylla::{CachingSession, SessionBuilder};
 use std::{
     sync::{Arc, Mutex},
     time::Duration,
 };
 use tokio::sync::mpsc;
 use tokio::time::interval;
+use crate::models::channels::ConnectedUsersToChannel;
+use crate::models::message::Message;
+use crate::models::streams_metrics::StreamersEventsLeaderboard;
 
 mod components;
 mod hydration;
@@ -33,12 +36,12 @@ struct App {
     tabs: Vec<&'static str>,
     active_tab: u32,
     // Data for the sidebar (list of active channels)
-    active_channels: Vec<(String, String, usize)>,
+    active_channels: Vec<StreamersEventsLeaderboard>,
     active_channel: usize,
     // Data for the main chat
-    chat_messages: Vec<String>,
+    chat_messages: Vec<Message>,
     // Data for connected users
-    connected_users: Vec<(String, u32)>, // (Username, Messages Sent)
+    connected_users: Vec<ConnectedUsersToChannel>, // (Username, Messages Sent)
     // Data for rankings
     rankings: Vec<(String, u32)>, // (Username, Messages Sent)
     // Focused component
@@ -50,18 +53,19 @@ impl App {
         App {
             tabs: vec!["Connected Users", "Rankings"],
             active_tab: 0,
-            active_channels: vec![("danielhe4rt".to_string(), "daniel".to_string(), 0)],
+            active_channels: vec![StreamersEventsLeaderboard{
+                streamer_id: "danielhe4rt".to_string(),
+                day: Default::default(),
+                events_count: 0,
+            }],
             active_channel: 0,
-            chat_messages: vec![
-                "User1: Hello!".to_string(),
-                "User2: Hi there!".to_string(),
-                "User3: Welcome to the chat.".to_string(),
-            ],
+            chat_messages: vec![Message::default()],
             connected_users: vec![
-                ("User1".to_string(), 150),
-                ("User2".to_string(), 120),
-                ("User3".to_string(), 100),
-                ("User4".to_string(), 80),
+                ConnectedUsersToChannel {
+                    streamer_id: "danielhe4rt".to_string(),
+                    chatter_id: Some("User1".to_string()),
+                    joined_at: None,
+                },
             ],
             rankings: vec![
                 ("User1".to_string(), 150),
@@ -204,21 +208,13 @@ fn draw_ui(f: &mut ratatui::Frame, app: &App) {
 }
 
 
-pub async fn start_terminal() -> Result<(), Box<dyn std::error::Error>> {
+pub async fn start_terminal(terminal_session: Arc<CachingSession>) -> Result<(), Box<dyn std::error::Error>> {
     // Initialize the terminal
     enable_raw_mode()?;
     let mut stdout = std::io::stdout();
     execute!(stdout, EnterAlternateScreen, EnableMouseCapture)?;
     let backend = CrosstermBackend::new(stdout);
     let mut terminal = Terminal::new(backend)?;
-
-    let session = SessionBuilder::new()
-        .known_node("localhost:9042")
-        .build()
-        .await
-        .unwrap();
-    session.use_keyspace("twitch", true).await.unwrap();
-    let session = Arc::new(session);
 
     // Create the application state
     let app = Arc::new(Mutex::new(App::new()));
@@ -230,7 +226,7 @@ pub async fn start_terminal() -> Result<(), Box<dyn std::error::Error>> {
     tokio::spawn(async move {
         loop {
             // Poll for an event with a timeout
-            if event::poll(Duration::from_millis(20)).unwrap() {
+            if event::poll(Duration::from_millis(50)).unwrap() {
                 if let CEvent::Key(key) = event::read().unwrap() {
                     let event = tx.send(key).await;
                     if event.is_err() {
@@ -276,7 +272,7 @@ pub async fn start_terminal() -> Result<(), Box<dyn std::error::Error>> {
                 }
             }
            _ = database_interval.tick() => {
-                hydration::fetch_data(Arc::clone(&app), Arc::clone(&session)).await
+                hydration::fetch_data(Arc::clone(&app), Arc::clone(&terminal_session)).await
                     .context("Failed to fetch data")?;
             }
 
@@ -291,8 +287,7 @@ pub async fn start_terminal() -> Result<(), Box<dyn std::error::Error>> {
         terminal.backend_mut(),
         LeaveAlternateScreen,
         DisableMouseCapture
-    )
-        .context("Failed to leave alternate screen")?;
+    ).context("Failed to leave alternate screen")?;
     terminal.show_cursor().context("Failed to show cursor")?;
 
     info!("Twitch client dashboard stopped");

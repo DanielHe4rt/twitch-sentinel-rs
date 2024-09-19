@@ -24,8 +24,8 @@ pub struct Channel {
 )]
 pub struct ConnectedUsersToChannel {
     pub streamer_id: Text,
-    pub chatter_id: Text,
-    pub joined_at: Timestamp,
+    pub chatter_id: Option<Text>,
+    pub joined_at: Option<Timestamp>,
 }
 
 #[charybdis_model(

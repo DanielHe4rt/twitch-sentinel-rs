@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 use log::trace;
-use scylla::{CachingSession, SessionBuilder};
+use scylla::{CachingSession, Session, SessionBuilder};
 use twitch_irc::{irc, ClientConfig, MetricsConfig, SecureTCPTransport, TwitchIRCClient};
 use twitch_irc::login::StaticLoginCredentials;
 use twitch_irc::message::ServerMessage;
@@ -13,17 +13,9 @@ use crate::twitch::server::prometheus_api;
 mod server;
 mod actions;
 
-pub async fn start_twitch_workload() -> anyhow::Result<()> {
-    let session = SessionBuilder::new()
-        .known_node("127.0.0.1:9042")
-        .build()
-        .await?;
-
+pub async fn start_twitch_workload(session: Arc<CachingSession>) -> anyhow::Result<()> {
+    
     prometheus_api();
-
-    session.use_keyspace("twitch", true).await?;
-    let caching = Arc::new(CachingSession::from(session, 20));
-
     let config = ClientConfig {
         // Enable metrics collection.
         metrics_config: MetricsConfig::Enabled {
@@ -42,7 +34,7 @@ pub async fn start_twitch_workload() -> anyhow::Result<()> {
         TwitchIRCClient::<SecureTCPTransport, StaticLoginCredentials>::new(config);
 
 
-    let handler_db = Arc::clone(&caching);
+    let handler_db = Arc::clone(&session);
     let message_handler = tokio::spawn(async move {
         while let Some(message) = incoming_messages.recv().await {
             match message {
@@ -69,7 +61,7 @@ pub async fn start_twitch_workload() -> anyhow::Result<()> {
     client.join("danielhe4rt".to_owned()).unwrap();
 
 
-    let result = caching.get_session().query_unpaged("SELECT streamer_username FROM twitch.channels", []).await?;
+    let result = session.get_session().query_unpaged("SELECT streamer_username FROM twitch.channels", []).await?;
     let mut result = result.rows_typed::<(String,)>()?;
     while let Some(row) = result.next().transpose()? {
         client.join(row.0.to_owned())?;

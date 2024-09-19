@@ -12,8 +12,12 @@ pub fn build_chatters_list(app: &App) -> Table {
 
     let users: Vec<Row> = app
         .connected_users
-        .iter()
-        .map(|(user, count)| Row::new(vec![user.to_string(), count.to_string()]))
+        .iter().enumerate()
+        .map(|(idx, data)| {
+            let chatter_id = data.chatter_id.as_ref().unwrap();
+            
+            Row::new(vec![chatter_id.to_string(), idx.to_string()])
+        })
         .collect();
 
     Table::new(users, [Constraint::Percentage(100)])

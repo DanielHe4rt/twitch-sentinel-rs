@@ -1,3 +1,4 @@
+use std::ops::Deref;
 use ratatui::layout::Constraint;
 use ratatui::prelude::{Color, Modifier, Style};
 use ratatui::widgets::{Block, Borders, Row, Table};
@@ -18,8 +19,9 @@ pub fn build_sidebar(app: &App) -> Table {
     let channels: Vec<Row> = app
         .active_channels
         .iter()
-        .map(|(_, formatted, idx)| {
-            let style = if *idx == app.active_channel {
+        .enumerate()
+        .map(|(idx, data)| {
+            let style = if idx == app.active_channel {
                 Style::default()
                     .underline_color(Color::Yellow)
                     .fg(Color::Yellow)
@@ -28,13 +30,14 @@ pub fn build_sidebar(app: &App) -> Table {
                 Style::default()
             };
 
-            Row::new(vec![formatted.as_str()]).style(style)
+            let fodase = data.events_count.clone().to_string();
+            Row::new(vec![format!("{} ({}) ", data.streamer_id.to_string(), fodase)]).style(style)
         })
         .collect();
 
     Table::new(channels, [Constraint::Percentage(100)])
         .block(sidebar_block)
-        .header(Row::new(vec!["Channel"]).style(
+        .header(Row::new(vec!["Channel", "Events Count"]).style(
             Style::default()
                 .add_modifier(Modifier::BOLD),
         ))

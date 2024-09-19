@@ -27,6 +27,7 @@ pub struct StreamersEventsCount {
     pub events_count: Int,
 }
 
+#[derive(Clone)]
 #[charybdis_view_model(
     table_name=streamers_events_leaderboard,
     base_table=streamers_events_count,
@@ -56,6 +57,7 @@ pub async fn handle_event(streamer_id: String, session: Arc<CachingSession>) {
         .unwrap();
     let counter = counter
         .find_by_primary_key()
+        .page_size(1)
         .execute(&session)
         .await
         .unwrap();

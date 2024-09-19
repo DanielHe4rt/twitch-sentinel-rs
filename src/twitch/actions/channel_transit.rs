@@ -28,9 +28,9 @@ pub async fn handle_transit(
 )
 {
     let connection = ConnectedUsersToChannel {
-        chatter_id: chatter_id.clone(),
+        chatter_id: Some(chatter_id.clone()),
         streamer_id: streamer_id.clone(),
-        joined_at: Timestamp::from(Utc::now()),
+        joined_at: Some(Timestamp::from(Utc::now())),
     };
 
     match state {
