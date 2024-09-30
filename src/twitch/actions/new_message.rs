@@ -13,10 +13,10 @@ pub async fn handle_message(session: Arc<CachingSession>, payload: PrivmsgMessag
     // Prepare and Increment 'Count' Type
     let counter = StreamMessagesCounterByUser::from_twitch(payload.clone());
     counter.increment_messages_count(1).execute(&session).await.unwrap();
-    let counter = counter.find_by_primary_key()
-        .page_size(1)
+    
+    let counter_result = counter.find_by_primary_key()
         .execute(&session).await.unwrap();
-
-    let count =  StreamMessageCountByUser::from_twitch_and_counter(payload.clone(), counter.messages_count);
+    
+    let count =  StreamMessageCountByUser::from_twitch_and_counter(payload.clone(), counter_result.messages_count.unwrap());
     count.insert().execute(&session).await.unwrap();
 }

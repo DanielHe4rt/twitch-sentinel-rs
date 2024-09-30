@@ -1,3 +1,6 @@
+use crate::models::channels::ConnectedUsersToChannel;
+use crate::models::message::Message;
+use crate::models::streams_metrics::StreamersEventsLeaderboard;
 use crate::ui::components::metrics::build_metrics_table;
 use crate::ui::components::ranking_rightbar::{build_ranking, build_right_bar};
 use anyhow::Context;
@@ -21,9 +24,7 @@ use std::{
 };
 use tokio::sync::mpsc;
 use tokio::time::interval;
-use crate::models::channels::ConnectedUsersToChannel;
-use crate::models::message::Message;
-use crate::models::streams_metrics::StreamersEventsLeaderboard;
+use crate::models::metrics::StreamLeaderboard;
 
 mod components;
 mod hydration;
@@ -43,7 +44,7 @@ struct App {
     // Data for connected users
     connected_users: Vec<ConnectedUsersToChannel>, // (Username, Messages Sent)
     // Data for rankings
-    rankings: Vec<(String, u32)>, // (Username, Messages Sent)
+    rankings: Vec<StreamLeaderboard>, // (Username, Messages Sent)
     // Focused component
     focused: Focus,
 }
@@ -68,9 +69,7 @@ impl App {
                 },
             ],
             rankings: vec![
-                ("User1".to_string(), 150),
-                ("User2".to_string(), 120),
-                ("User3".to_string(), 100),
+                StreamLeaderboard::default(),
             ],
             focused: Focus::Sidebar, // Default focus
         }
@@ -120,7 +119,8 @@ fn draw_ui(f: &mut ratatui::Frame, app: &App) {
         .direction(Direction::Vertical)
         .constraints(
             [
-                Constraint::Length(5), // Top Bar (increased height for Metrics Table)
+                // Constraint::Length(5), // Top Bar (increased height for Metrics Table)
+                Constraint::Length(0), // Top Bar (increased height for Metrics Table)
                 Constraint::Min(0),    // Main Content
             ]
                 .as_ref(),
@@ -151,11 +151,11 @@ fn draw_ui(f: &mut ratatui::Frame, app: &App) {
         .split(main_chunks[2]);
     let tabs = build_right_bar(&app);
 
-    let metrics_table = build_metrics_table(&app);
+    //let metrics_table = build_metrics_table(&app);
     let chat_paragraph = components::chat::build_chat(&app);
     let channels_table = components::channels_sidebar::build_sidebar(&app);
 
-    f.render_widget(metrics_table, outer_chunks[0]);
+    //f.render_widget(metrics_table, outer_chunks[0]);
     f.render_widget(channels_table, main_chunks[0]);
     f.render_widget(chat_paragraph, main_chunks[1]);
     f.render_widget(tabs, right_bar_chunks[0]);
@@ -226,7 +226,7 @@ pub async fn start_terminal(terminal_session: Arc<CachingSession>) -> Result<(),
     tokio::spawn(async move {
         loop {
             // Poll for an event with a timeout
-            if event::poll(Duration::from_millis(50)).unwrap() {
+            if event::poll(Duration::from_millis(400)).unwrap() {
                 if let CEvent::Key(key) = event::read().unwrap() {
                     let event = tx.send(key).await;
                     if event.is_err() {
@@ -242,7 +242,7 @@ pub async fn start_terminal(terminal_session: Arc<CachingSession>) -> Result<(),
 
     // Spawn a task to send tick events every 250ms.
     tokio::spawn(async move {
-        let mut interval = interval(Duration::from_millis(250));
+        let mut interval = interval(Duration::from_millis(350));
         loop {
             interval.tick().await;
             if tick_tx.send(()).await.is_err() {
@@ -253,7 +253,7 @@ pub async fn start_terminal(terminal_session: Arc<CachingSession>) -> Result<(),
 
     // Main loop
     // Main event loop.
-    let mut database_interval = tokio::time::interval(Duration::from_millis(350));
+    let mut database_interval = tokio::time::interval(Duration::from_millis(400));
     loop {
         tokio::select! {
             // Handle tick events to redraw the UI.

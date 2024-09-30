@@ -2,6 +2,8 @@ use charybdis::macros::{charybdis_model, charybdis_view_model};
 use charybdis::operations::{Find, Insert};
 use charybdis::types::{Counter, Date, Int, Text};
 use chrono::Utc;
+use futures::StreamExt;
+use scylla::query::Query;
 use scylla::CachingSession;
 use std::sync::Arc;
 
@@ -41,6 +43,32 @@ pub struct StreamersEventsLeaderboard {
     pub streamer_id: Text,
     pub day: Date,
     pub events_count: Int,
+}
+
+impl StreamersEventsLeaderboard {
+    pub async fn get_leaderboard(
+        session: &CachingSession,
+    ) -> anyhow::Result<(Vec<StreamersEventsLeaderboard>)> {
+        let today_date = Utc::now().date_naive();
+
+        let query = "SELECT streamer_id, day, events_count FROM streamers_events_leaderboard WHERE day = ? LIMIT 50";
+        let mut query = Query::new(query);
+        query.set_page_size(50);
+
+        let mut response = session
+            .get_session()
+            .query_iter(query, (today_date,))
+            .await?
+            .into_typed::<StreamersEventsLeaderboard>();
+
+        let mut result = Vec::new();
+        while let Some(next_row_res) = response.next().await {
+            let row = next_row_res?;
+            result.push(row.clone());
+        }
+
+        Ok(result)
+    }
 }
 
 pub async fn handle_event(streamer_id: String, session: Arc<CachingSession>) {

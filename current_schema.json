@@ -1,5 +1,139 @@
 {
   "tables": {
+    "connected_users_to_channel": {
+      "fields": [
+        [
+          "chatter_id",
+          "text",
+          false
+        ],
+        [
+          "joined_at",
+          "timestamp",
+          false
+        ],
+        [
+          "streamer_id",
+          "text",
+          false
+        ]
+      ],
+      "field_names": [
+        "joined_at",
+        "chatter_id",
+        "streamer_id"
+      ],
+      "types_by_name": {
+        "streamer_id": "text",
+        "joined_at": "timestamp",
+        "chatter_id": "text"
+      },
+      "type_name": "",
+      "table_name": "",
+      "base_table": "",
+      "partition_keys": [
+        "streamer_id"
+      ],
+      "clustering_keys": [
+        "chatter_id"
+      ],
+      "static_columns": [],
+      "global_secondary_indexes": [],
+      "local_secondary_indexes": [],
+      "table_options": null
+    },
+    "channel_connected_users_history": {
+      "fields": [
+        [
+          "chatter_id",
+          "text",
+          false
+        ],
+        [
+          "created_at",
+          "timestamp",
+          false
+        ],
+        [
+          "event",
+          "text",
+          false
+        ],
+        [
+          "streamer_id",
+          "text",
+          false
+        ]
+      ],
+      "field_names": [
+        "chatter_id",
+        "event",
+        "created_at",
+        "streamer_id"
+      ],
+      "types_by_name": {
+        "created_at": "timestamp",
+        "chatter_id": "text",
+        "streamer_id": "text",
+        "event": "text"
+      },
+      "type_name": "",
+      "table_name": "",
+      "base_table": "",
+      "partition_keys": [
+        "streamer_id"
+      ],
+      "clustering_keys": [
+        "chatter_id",
+        "created_at",
+        "event"
+      ],
+      "static_columns": [],
+      "global_secondary_indexes": [],
+      "local_secondary_indexes": [],
+      "table_options": null
+    },
+    "streamers_events_count": {
+      "fields": [
+        [
+          "day",
+          "date",
+          false
+        ],
+        [
+          "events_count",
+          "int",
+          false
+        ],
+        [
+          "streamer_id",
+          "text",
+          false
+        ]
+      ],
+      "field_names": [
+        "day",
+        "streamer_id",
+        "events_count"
+      ],
+      "types_by_name": {
+        "day": "date",
+        "events_count": "int",
+        "streamer_id": "text"
+      },
+      "type_name": "",
+      "table_name": "",
+      "base_table": "",
+      "partition_keys": [
+        "day",
+        "streamer_id"
+      ],
+      "clustering_keys": [],
+      "static_columns": [],
+      "global_secondary_indexes": [],
+      "local_secondary_indexes": [],
+      "table_options": null
+    },
     "messages": {
       "fields": [
         [
@@ -44,24 +178,24 @@
         ]
       ],
       "field_names": [
-        "chatter_color",
-        "chatter_username",
         "message_id",
-        "streamer_id",
         "content",
+        "chatter_username",
         "sent_at",
         "chatter_badges",
-        "chatter_id"
+        "chatter_id",
+        "streamer_id",
+        "chatter_color"
       ],
       "types_by_name": {
-        "chatter_color": "text",
         "content": "text",
-        "sent_at": "timestamp",
-        "message_id": "uuid",
-        "chatter_badges": "set<text>",
         "chatter_id": "text",
+        "chatter_color": "text",
+        "chatter_username": "text",
         "streamer_id": "text",
-        "chatter_username": "text"
+        "chatter_badges": "set<text>",
+        "sent_at": "timestamp",
+        "message_id": "uuid"
       },
       "type_name": "",
       "table_name": "",
@@ -73,88 +207,6 @@
         "chatter_username",
         "sent_at"
       ],
-      "static_columns": [],
-      "global_secondary_indexes": [],
-      "local_secondary_indexes": [],
-      "table_options": null
-    },
-    "streamers_events_counter": {
-      "fields": [
-        [
-          "day",
-          "date",
-          false
-        ],
-        [
-          "events_count",
-          "counter",
-          false
-        ],
-        [
-          "streamer_id",
-          "text",
-          false
-        ]
-      ],
-      "field_names": [
-        "events_count",
-        "streamer_id",
-        "day"
-      ],
-      "types_by_name": {
-        "events_count": "counter",
-        "day": "date",
-        "streamer_id": "text"
-      },
-      "type_name": "",
-      "table_name": "",
-      "base_table": "",
-      "partition_keys": [
-        "day",
-        "streamer_id"
-      ],
-      "clustering_keys": [],
-      "static_columns": [],
-      "global_secondary_indexes": [],
-      "local_secondary_indexes": [],
-      "table_options": null
-    },
-    "streamers_events_count": {
-      "fields": [
-        [
-          "day",
-          "date",
-          false
-        ],
-        [
-          "events_count",
-          "int",
-          false
-        ],
-        [
-          "streamer_id",
-          "text",
-          false
-        ]
-      ],
-      "field_names": [
-        "events_count",
-        "streamer_id",
-        "day"
-      ],
-      "types_by_name": {
-        "streamer_id": "text",
-        "events_count": "int",
-        "day": "date"
-      },
-      "type_name": "",
-      "table_name": "",
-      "base_table": "",
-      "partition_keys": [
-        "day",
-        "streamer_id"
-      ],
-      "clustering_keys": [],
       "static_columns": [],
       "global_secondary_indexes": [],
       "local_secondary_indexes": [],
@@ -194,19 +246,19 @@
         ]
       ],
       "field_names": [
-        "streamer_id",
-        "last_game_info",
-        "streamer_username",
-        "stream_tags",
         "created_at",
-        "profile_image_url"
+        "profile_image_url",
+        "last_game_info",
+        "streamer_id",
+        "streamer_username",
+        "stream_tags"
       ],
       "types_by_name": {
+        "profile_image_url": "text",
+        "last_game_info": "text",
+        "created_at": "text",
         "stream_tags": "text",
         "streamer_username": "text",
-        "created_at": "text",
-        "last_game_info": "text",
-        "profile_image_url": "text",
         "streamer_id": "text"
       },
       "type_name": "",
@@ -221,7 +273,7 @@
       "local_secondary_indexes": [],
       "table_options": null
     },
-    "connected_users_to_channel": {
+    "stream_messages_counter_by_user": {
       "fields": [
         [
           "chatter_id",
@@ -229,8 +281,8 @@
           false
         ],
         [
-          "joined_at",
-          "timestamp",
+          "messages_count",
+          "counter",
           false
         ],
         [
@@ -240,44 +292,38 @@
         ]
       ],
       "field_names": [
-        "joined_at",
-        "streamer_id",
-        "chatter_id"
+        "chatter_id",
+        "messages_count",
+        "streamer_id"
       ],
       "types_by_name": {
-        "chatter_id": "text",
+        "messages_count": "counter",
         "streamer_id": "text",
-        "joined_at": "timestamp"
+        "chatter_id": "text"
       },
       "type_name": "",
       "table_name": "",
       "base_table": "",
       "partition_keys": [
+        "chatter_id",
         "streamer_id"
       ],
-      "clustering_keys": [
-        "chatter_id"
-      ],
+      "clustering_keys": [],
       "static_columns": [],
       "global_secondary_indexes": [],
       "local_secondary_indexes": [],
       "table_options": null
     },
-    "channel_connected_users_history": {
+    "streamers_events_counter": {
       "fields": [
         [
-          "chatter_id",
-          "text",
+          "day",
+          "date",
           false
         ],
         [
-          "created_at",
-          "timestamp",
-          false
-        ],
-        [
-          "event",
-          "text",
+          "events_count",
+          "counter",
           false
         ],
         [
@@ -287,28 +333,23 @@
         ]
       ],
       "field_names": [
-        "chatter_id",
         "streamer_id",
-        "created_at",
-        "event"
+        "day",
+        "events_count"
       ],
       "types_by_name": {
-        "chatter_id": "text",
+        "events_count": "counter",
         "streamer_id": "text",
-        "event": "text",
-        "created_at": "timestamp"
+        "day": "date"
       },
       "type_name": "",
       "table_name": "",
       "base_table": "",
       "partition_keys": [
+        "day",
         "streamer_id"
       ],
-      "clustering_keys": [
-        "chatter_id",
-        "created_at",
-        "event"
-      ],
+      "clustering_keys": [],
       "static_columns": [],
       "global_secondary_indexes": [],
       "local_secondary_indexes": [],
@@ -338,16 +379,16 @@
         ]
       ],
       "field_names": [
-        "chatter_id",
         "messages_count",
-        "chatter_username",
-        "streamer_id"
+        "streamer_id",
+        "chatter_id",
+        "chatter_username"
       ],
       "types_by_name": {
         "streamer_id": "text",
-        "chatter_id": "text",
+        "messages_count": "int",
         "chatter_username": "text",
-        "messages_count": "int"
+        "chatter_id": "text"
       },
       "type_name": "",
       "table_name": "",
@@ -362,17 +403,40 @@
       "global_secondary_indexes": [],
       "local_secondary_indexes": [],
       "table_options": null
-    },
-    "stream_messages_counter_by_user": {
+    }
+  },
+  "udts": {},
+  "materialized_views": {
+    "messages_by_user": {
       "fields": [
+        [
+          "chatter_badges",
+          "set<text>",
+          false
+        ],
+        [
+          "chatter_color",
+          "text",
+          false
+        ],
         [
           "chatter_id",
           "text",
           false
         ],
         [
-          "messages_count",
-          "counter",
+          "chatter_username",
+          "text",
+          false
+        ],
+        [
+          "message_id",
+          "uuid",
+          false
+        ],
+        [
+          "sent_at",
+          "timestamp",
           false
         ],
         [
@@ -382,31 +446,38 @@
         ]
       ],
       "field_names": [
+        "sent_at",
+        "chatter_color",
+        "chatter_username",
+        "message_id",
         "streamer_id",
         "chatter_id",
-        "messages_count"
+        "chatter_badges"
       ],
       "types_by_name": {
+        "streamer_id": "text",
+        "sent_at": "timestamp",
         "chatter_id": "text",
-        "messages_count": "counter",
-        "streamer_id": "text"
+        "chatter_badges": "set<text>",
+        "chatter_username": "text",
+        "message_id": "uuid",
+        "chatter_color": "text"
       },
       "type_name": "",
       "table_name": "",
       "base_table": "",
       "partition_keys": [
-        "chatter_id",
+        "chatter_username"
+      ],
+      "clustering_keys": [
+        "sent_at",
         "streamer_id"
       ],
-      "clustering_keys": [],
       "static_columns": [],
       "global_secondary_indexes": [],
       "local_secondary_indexes": [],
       "table_options": null
-    }
-  },
-  "udts": {},
-  "materialized_views": {
+    },
     "streamers_events_leaderboard": {
       "fields": [
         [
@@ -450,77 +521,6 @@
       "local_secondary_indexes": [],
       "table_options": null
     },
-    "messages_by_user": {
-      "fields": [
-        [
-          "chatter_badges",
-          "set<text>",
-          false
-        ],
-        [
-          "chatter_color",
-          "text",
-          false
-        ],
-        [
-          "chatter_id",
-          "text",
-          false
-        ],
-        [
-          "chatter_username",
-          "text",
-          false
-        ],
-        [
-          "message_id",
-          "uuid",
-          false
-        ],
-        [
-          "sent_at",
-          "timestamp",
-          false
-        ],
-        [
-          "streamer_id",
-          "text",
-          false
-        ]
-      ],
-      "field_names": [
-        "message_id",
-        "chatter_badges",
-        "streamer_id",
-        "chatter_color",
-        "sent_at",
-        "chatter_id",
-        "chatter_username"
-      ],
-      "types_by_name": {
-        "sent_at": "timestamp",
-        "message_id": "uuid",
-        "chatter_color": "text",
-        "chatter_badges": "set<text>",
-        "chatter_username": "text",
-        "streamer_id": "text",
-        "chatter_id": "text"
-      },
-      "type_name": "",
-      "table_name": "",
-      "base_table": "",
-      "partition_keys": [
-        "chatter_username"
-      ],
-      "clustering_keys": [
-        "sent_at",
-        "streamer_id"
-      ],
-      "static_columns": [],
-      "global_secondary_indexes": [],
-      "local_secondary_indexes": [],
-      "table_options": null
-    },
     "stream_leaderboard": {
       "fields": [
         [
@@ -545,16 +545,16 @@
         ]
       ],
       "field_names": [
-        "streamer_id",
-        "messages_count",
         "chatter_username",
+        "messages_count",
+        "streamer_id",
         "chatter_id"
       ],
       "types_by_name": {
-        "chatter_username": "text",
         "chatter_id": "text",
+        "messages_count": "int",
         "streamer_id": "text",
-        "messages_count": "int"
+        "chatter_username": "text"
       },
       "type_name": "",
       "table_name": "",

@@ -11,7 +11,7 @@ use crate::twitch::actions::new_message::handle_message;
 use crate::twitch::server::prometheus_api;
 
 mod server;
-mod actions;
+pub mod actions;
 
 pub async fn start_twitch_workload(session: Arc<CachingSession>) -> anyhow::Result<()> {
     
@@ -61,7 +61,7 @@ pub async fn start_twitch_workload(session: Arc<CachingSession>) -> anyhow::Resu
     client.join("danielhe4rt".to_owned()).unwrap();
 
 
-    let result = session.get_session().query_unpaged("SELECT streamer_username FROM twitch.channels", []).await?;
+    let result = session.get_session().query_unpaged("SELECT streamer_username FROM twitch.channels LIMIT 30", []).await?;
     let mut result = result.rows_typed::<(String,)>()?;
     while let Some(row) = result.next().transpose()? {
         client.join(row.0.to_owned())?;
